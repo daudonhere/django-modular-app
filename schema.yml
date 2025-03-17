@@ -1,0 +1,776 @@
+openapi: 3.0.3
+info:
+  title: Django Modular App
+  version: 1.0.0
+  description: List Endpoint Django Modular Base
+paths:
+  /module/products/:
+    get:
+      operationId: get_all_modules
+      description: Retrieve all modules.
+      tags:
+      - Modules
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Module'
+          description: ''
+  /module/products/{id}/:
+    get:
+      operationId: get_module_by_id
+      description: Retrieve a specific module by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this module.
+        required: true
+      tags:
+      - Modules
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Module'
+          description: ''
+  /module/products/{id}/install/:
+    post:
+      operationId: install_module
+      description: Install a module by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this module.
+        required: true
+      tags:
+      - Modules
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Module'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Module'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Module'
+        required: true
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Module'
+          description: ''
+  /module/products/{id}/uninstall/:
+    post:
+      operationId: uninstall_module
+      description: Uninstall a module by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this module.
+        required: true
+      tags:
+      - Modules
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Module'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Module'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Module'
+        required: true
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Module'
+          description: ''
+  /module/products/{id}/upgrade/:
+    post:
+      operationId: upgrade_module
+      description: Upgrade a module by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this module.
+        required: true
+      tags:
+      - Modules
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Module'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Module'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Module'
+        required: true
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Module'
+          description: ''
+  /module/products/get_active/:
+    get:
+      operationId: get_installed_modules
+      description: Retrieve all installed modules.
+      tags:
+      - Modules
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Module'
+          description: ''
+  /services/products/create:
+    post:
+      operationId: create_product
+      description: Create Product
+      tags:
+      - Create Product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /services/products/delete/{id}:
+    delete:
+      operationId: delete_product_by_id
+      description: Delete a specific product by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - Delete Product
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /services/products/delete/all:
+    delete:
+      operationId: delete_all_product
+      description: Delete all product.
+      tags:
+      - Delete Product
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /services/products/get/{id}:
+    get:
+      operationId: get_products_by_id
+      description: Retrieve a specific products by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - Get Products
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /services/products/get/all:
+    get:
+      operationId: get_all_products
+      description: Retrieve all products.
+      tags:
+      - Get Products
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /services/products/update/{id}:
+    put:
+      operationId: update_product_by_id
+      description: Update an existing product by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - Update Product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /services/roles/get/{id}:
+    get:
+      operationId: get_roles_by_id
+      description: Retrieve a specific role by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - Get Roles
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+  /services/roles/get/all:
+    get:
+      operationId: get_all_roles
+      description: Retrieve all roles.
+      tags:
+      - Get Roles
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+  /services/user-roles/get/{id}:
+    get:
+      operationId: get_user_roles_by_id
+      description: Retrieve a specific user role by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user role.
+        required: true
+      tags:
+      - Get User Roles
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRole'
+          description: ''
+  /services/user-roles/get/all:
+    get:
+      operationId: get_all_user_roles
+      description: Retrieve all user roles.
+      tags:
+      - Get User Roles
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRole'
+          description: ''
+  /services/users/create:
+    post:
+      operationId: create_user
+      description: Create a new user with role assignment.
+      tags:
+      - Create User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              example:
+                username: john_doe
+                email: john@example.com
+                password: securepassword
+                roles:
+                - 1
+                - 2
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                description: Invalid data provided
+          description: ''
+  /services/users/delete/{id}:
+    delete:
+      operationId: delete_user_by_id
+      description: Delete a specific user by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - Delete Users
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /services/users/delete/all:
+    delete:
+      operationId: delete_all_users
+      description: Delete all users.
+      tags:
+      - Delete Users
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /services/users/get/{id}:
+    get:
+      operationId: get_user_by_id
+      description: Retrieve a specific user by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - Get Users
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /services/users/get/all:
+    get:
+      operationId: get_all_users
+      description: Retrieve all users.
+      tags:
+      - Get Users
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /services/users/login:
+    post:
+      operationId: login_user
+      description: Authenticate user and generate token.
+      tags:
+      - Login & Logout Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                token: string
+                refresh_token: string
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                error: Invalid credentials
+          description: ''
+  /services/users/logout:
+    post:
+      operationId: logout_user
+      description: Logout user and clear token.
+      tags:
+      - Login & Logout Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              example:
+                token: user-token
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                message: Logged out successfully
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                error: Invalid request
+          description: ''
+  /services/users/update/{id}:
+    put:
+      operationId: update_user_by_id
+      description: Update an existing user by ID.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - Update Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              example:
+                username: john_doe
+                email: john@example.com
+                password: securepassword
+                roles:
+                - 1
+                - 2
+                is_active: true
+      security:
+      - CustomTokenAuth: []
+      - cookieAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+components:
+  schemas:
+    Login:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    Module:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        installed:
+          type: boolean
+        version:
+          type: string
+          maxLength: 50
+      required:
+      - id
+      - name
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product_name:
+          type: string
+          maxLength: 255
+        barcode:
+          type: string
+          maxLength: 50
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        stock:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - barcode
+      - created_at
+      - id
+      - price
+      - product_name
+      - updated_at
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        rolename:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - rolename
+      - updated_at
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+        token:
+          type: string
+          readOnly: true
+          nullable: true
+        refresh_token:
+          type: string
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - id
+      - password
+      - refresh_token
+      - token
+      - updated_at
+      - username
+    UserRole:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+        role:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - role
+      - updated_at
+      - user
+  securitySchemes:
+    CustomTokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Enter your token with ''Token'' prefix. Example: ''Token 123abc456def'''
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

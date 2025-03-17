@@ -79,7 +79,7 @@ rpds-py==0.23.1
 rpm==4.20.0
 rpmautospec==0.7.3
 rpmautospec-core==0.1.5
-selinux @ file:///builddir/build/BUILD/libselinux-3.7-build/libselinux-3.7/src
+# selinux @ file:///builddir/build/BUILD/libselinux-3.7-build/libselinux-3.7/src
 sepolicy @ file:///builddir/build/BUILD/policycoreutils-3.7-build/selinux-3.7/python/sepolicy
 setools==4.5.1
 setuptools==69.2.0

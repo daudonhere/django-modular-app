@@ -94,3 +94,4 @@ uritemplate==4.1.1
 urllib3==1.26.20
 virtualenv==20.21.1
 xkbregistry==0.3
+gunicorn

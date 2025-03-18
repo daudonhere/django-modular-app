@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     "drf_spectacular",
     'rest_framework',
+    'corsheaders',
     'configs',
     'engines',
     'products'
@@ -79,6 +80,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -90,6 +92,12 @@ MIDDLEWARE = [
     'configs.middleware.custom_error.Middleware',
     'configs.middleware.blocked_module.Middleware',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 
 AUTHENTICATION_BACKENDS = [

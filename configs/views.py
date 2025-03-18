@@ -12,6 +12,7 @@ from configs.permissions import UserPermission
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
+from configs.utils import success_response, error_response
 
 # Render home page
 def HomePage(request):
@@ -25,7 +26,6 @@ def ErrorPage(request, exception=None, status_code=500):
 
 # AUTHENTICATION SERVICE START
 
-# Login View
 class LoginViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
@@ -36,8 +36,26 @@ class LoginViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         description="Authenticate user and generate token.",
         request=LoginSerializer,
         responses={
-            200: {"token": "string", "refresh_token": "string"},
-            400: {"error": "Invalid credentials"},
+            200: {
+                "data": {
+                    "token": "string",
+                    "refresh_token": "string",
+                    "user": {
+                        "id": "integer",
+                        "username": "string",
+                        "email": "string",
+                    },
+                },
+                "status": "success",
+                "code": 200,
+                "messages": "Login successful",
+            },
+            401: {
+                "data": None,
+                "status": "error",
+                "code": 401,
+                "messages": "Invalid credentials",
+            },
         },
     )
     def create(self, request, *args, **kwargs):
@@ -45,30 +63,48 @@ class LoginViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         if serializer.is_valid():
             username = serializer.validated_data["username"]
             password = serializer.validated_data["password"]
-
+            
             try:
                 user = User.objects.get(username=username)
             except User.DoesNotExist:
-                return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+                return error_response(
+                    message="Invalid credentials",
+                    code=status.HTTP_401_UNAUTHORIZED
+                )
 
             if not check_password(password, user.password):
-                return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+                return error_response(
+                    message="Invalid credentials",
+                    code=status.HTTP_401_UNAUTHORIZED
+                )
 
             token = str(uuid.uuid4())
             refresh_token = str(uuid.uuid4())
-
             user.token = token
             user.refresh_token = refresh_token
             user.save()
 
-            return Response({"token": token, "refresh_token": refresh_token}, status=status.HTTP_200_OK)
+            return success_response(
+                data={
+                    "token": token,
+                    "refresh_token": refresh_token,
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                    },
+                },
+                message="Login successful",
+                code=status.HTTP_200_OK
+            )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return error_response(
+            message="Invalid input",
+            code=status.HTTP_400_BAD_REQUEST,
+            data=serializer.errors
+        )
 
-
-# Logout View
 class LogoutViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    serializer_class = LoginSerializer
     permission_classes = [AllowAny]
 
     @extend_schema(
@@ -77,34 +113,57 @@ class LogoutViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         description="Logout user and clear token.",
         request={"application/json": {"example": {"token": "user-token"}}},
         responses={
-            200: {"message": "Logged out successfully"},
-            400: {"error": "Invalid request"},
+            200: {
+                "data": None,
+                "status": "success",
+                "code": 200,
+                "messages": "Logged out successfully",
+            },
+            400: {
+                "data": None,
+                "status": "error",
+                "code": 400,
+                "messages": "Token is required",
+            },
+            401: {
+                "data": None,
+                "status": "error",
+                "code": 401,
+                "messages": "Invalid token",
+            },
         },
     )
     def create(self, request, *args, **kwargs):
         token = request.data.get("token")
 
         if not token:
-            return Response({"error": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return error_response(
+                message="Token is required",
+                code=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             user = User.objects.get(token=token)
         except User.DoesNotExist:
-            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+            return error_response(
+                message="Invalid token",
+                code=status.HTTP_401_UNAUTHORIZED
+            )
 
         user.token = None
         user.refresh_token = None
         user.save()
 
-        return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
-    
+        return success_response(
+            data=None,
+            message="Logged out successfully",
+            code=status.HTTP_200_OK
+        )
+
 # AUTHENTICATION SERVICE END
-
-
 
 # ROLES SERVICE START
 
-# Get Roles
 @extend_schema_view(
     retrieve=extend_schema(
         operation_id="get_roles_by_id",
@@ -118,9 +177,19 @@ class GetRoleViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     permission_classes = [UserPermission]
 
     def retrieve(self, request, *args, **kwargs):
-        role = get_object_or_404(Role, pk=kwargs["pk"])
+        role = self.queryset.filter(pk=kwargs["pk"]).first()
+        if not role:
+            return error_response(
+                message="Role not found",
+                code=status.HTTP_404_NOT_FOUND
+            )
+
         serializer = self.get_serializer(role)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return success_response(
+            data=serializer.data,
+            message="Role retrieved successfully",
+            code=status.HTTP_200_OK
+        )
 
     @extend_schema(
         operation_id="get_all_roles",
@@ -131,12 +200,19 @@ class GetRoleViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     def all_roles(self, request):
         queryset = self.get_queryset()
         if not queryset.exists():
-            return Response({"message": "No roles available."}, status=status.HTTP_204_NO_CONTENT)
+            return error_response(
+                message="No roles available",
+                code=status.HTTP_204_NO_CONTENT
+            )
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return success_response(
+            data=serializer.data,
+            message="Roles retrieved successfully",
+            code=status.HTTP_200_OK
+        )
 
-# Get User Role
+
 @extend_schema_view(
     retrieve=extend_schema(
         operation_id="get_user_roles_by_id",
@@ -150,9 +226,19 @@ class GetUserRoleViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     permission_classes = [UserPermission]
 
     def retrieve(self, request, *args, **kwargs):
-        user_role = get_object_or_404(UserRole, pk=kwargs["pk"])
+        user_role = self.queryset.filter(pk=kwargs["pk"]).first()
+        if not user_role:
+            return error_response(
+                message="User role not found",
+                code=status.HTTP_404_NOT_FOUND
+            )
+
         serializer = self.get_serializer(user_role)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return success_response(
+            data=serializer.data,
+            message="User role retrieved successfully",
+            code=status.HTTP_200_OK
+        )
 
     @extend_schema(
         operation_id="get_all_user_roles",
@@ -163,16 +249,22 @@ class GetUserRoleViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     def all_user_roles(self, request):
         queryset = self.get_queryset()
         if not queryset.exists():
-            return Response({"message": "No user roles available."}, status=status.HTTP_204_NO_CONTENT)
+            return error_response(
+                message="No user roles available",
+                code=status.HTTP_204_NO_CONTENT
+            )
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
+        return success_response(
+            data=serializer.data,
+            message="User roles retrieved successfully",
+            code=status.HTTP_200_OK
+        )
+
 # ROLES SERVICE END
 
 # USER SERVICE START
 
-# Create Users
 class CreateUserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
@@ -201,55 +293,97 @@ class CreateUserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             with transaction.atomic():
                 data = request.data.copy()
                 
+                # Validasi roles
                 roles_ids = data.get("roles", [])
                 if not isinstance(roles_ids, list):
                     return Response(
-                        {"roles": ["Roles must list or array."]},
+                        {
+                            "data": None,
+                            "status": "error",
+                            "code": 400,
+                            "messages": "Field 'roles' must be a list."
+                        },
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
                 if not roles_ids:
                     return Response(
-                        {"roles": ["Field roles must filled."]},
+                        {
+                            "data": None,
+                            "status": "error",
+                            "code": 400,
+                            "messages": "Field 'roles' cannot be empty."
+                        },
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
+                # Cek validitas Role ID
                 valid_roles = Role.objects.filter(id__in=roles_ids)
                 if valid_roles.count() != len(roles_ids):
                     invalid_ids = set(roles_ids) - set(valid_roles.values_list('id', flat=True))
                     return Response(
-                        {"roles": [f"Roles ID not valid: {invalid_ids}"]},
+                        {
+                            "data": None,
+                            "status": "error",
+                            "code": 400,
+                            "messages": f"Invalid role IDs: {list(invalid_ids)}"
+                        },
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
+                # Validasi & Simpan User
                 serializer = self.get_serializer(data=data)
                 serializer.is_valid(raise_exception=True)
                 user = serializer.save()
                 
-                for role in valid_roles:
-                    UserRole.objects.create(user=user, role=role)
+                # Assign Role ke User
+                UserRole.objects.bulk_create(
+                    [UserRole(user=user, role=role) for role in valid_roles]
+                )
                 
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(
+                    {
+                        "data": serializer.data,
+                        "status": "success",
+                        "code": 201,
+                        "messages": "User created successfully."
+                    },
+                    status=status.HTTP_201_CREATED
+                )
 
         except ValidationError as e:
             return Response(
-                {"validation_error": e.detail},
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 400,
+                    "messages": e.detail
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
-            
-        except ObjectDoesNotExist as e:
+
+        except IntegrityError:
             return Response(
-                {"error": f"Object not found: {str(e)}"},
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 400,
+                    "messages": "Username or email already exists."
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
-            
+
         except Exception as e:
             return Response(
-                {"system_error": f"internal server error: {str(e)}"},
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 500,
+                    "messages": f"Internal server error: {str(e)}"
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-# Get Users
 
 @extend_schema_view(
     retrieve=extend_schema(
@@ -264,9 +398,28 @@ class GetUserViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     permission_classes = [UserPermission]
 
     def retrieve(self, request, *args, **kwargs):
-        user = get_object_or_404(User, pk=kwargs["pk"])
-        serializer = self.get_serializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            user = self.get_queryset().get(pk=kwargs["pk"])
+            serializer = self.get_serializer(user)
+            return Response(
+                {
+                    "data": serializer.data,
+                    "status": "success",
+                    "code": 200,
+                    "messages": "User retrieved successfully."
+                },
+                status=status.HTTP_200_OK
+            )
+        except User.DoesNotExist:
+            return Response(
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 404,
+                    "messages": "User not found."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     @extend_schema(
         operation_id="get_all_users",
@@ -277,12 +430,27 @@ class GetUserViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     def all_users(self, request):
         queryset = self.get_queryset()
         if not queryset.exists():
-            return Response({"message": "No users available."}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {
+                    "data": [],
+                    "status": "success",
+                    "code": 200,
+                    "messages": "No users available."
+                },
+                status=status.HTTP_200_OK
+            )
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "data": serializer.data,
+                "status": "success",
+                "code": 200,
+                "messages": "Users retrieved successfully."
+            },
+            status=status.HTTP_200_OK
+        )
 
-# Update Users
 class UpdateUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -307,9 +475,68 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
         responses={200: UserSerializer},
     )
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-    
-# Delete Users
+        user_id = kwargs.get("pk")
+
+        if not user_id:
+            return Response(
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 400,
+                    "messages": "User ID is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 404,
+                    "messages": "User not found."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 400,
+                    "messages": "Validation failed.",
+                    "errors": serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            serializer.save()
+            return Response(
+                {
+                    "data": serializer.data,
+                    "status": "success",
+                    "code": 200,
+                    "messages": "User updated successfully."
+                },
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 500,
+                    "messages": f"Internal server error: {str(e)}"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 @extend_schema_view(
     destroy=extend_schema(
         operation_id="delete_user_by_id",
@@ -324,17 +551,50 @@ class DeleteUserViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
 
     def destroy(self, request, *args, **kwargs):
         user_id = kwargs.get("pk")
-        print(f"Request to delete user ID: {user_id}")
 
         if not user_id:
-            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 400,
+                    "messages": "User ID is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             user = User.objects.get(id=user_id)
             user.delete()
-            return Response({"message": f"User {user_id} deleted."}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {
+                    "data": None,
+                    "status": "success",
+                    "code": 200,
+                    "messages": "User has been deleted successfully."
+                },
+                status=status.HTTP_200_OK
+            )
         except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 404,
+                    "messages": "User not found."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 500,
+                    "messages": f"Internal server error: {str(e)}"
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @extend_schema(
         operation_id="delete_all_users",
@@ -344,9 +604,26 @@ class DeleteUserViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
     @action(methods=["delete"], detail=False, url_path="all")
     def delete_all(self, request):
         deleted_count, _ = User.objects.all().delete()
+
+        if deleted_count == 0:
+            return Response(
+                {
+                    "data": None,
+                    "status": "error",
+                    "code": 404,
+                    "messages": "No users found to delete."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
         return Response(
-            {"message": f"{deleted_count} users deleted."},
-            status=status.HTTP_204_NO_CONTENT
+            {
+                "data": None,
+                "status": "success",
+                "code": 200,
+                "messages": f"{deleted_count} users have been deleted successfully."
+            },
+            status=status.HTTP_200_OK
         )
 
 # USER SERVICE END

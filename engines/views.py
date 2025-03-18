@@ -1,9 +1,10 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, mixins, status
-from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from engines.models import Module
+from configs.utils import success_response, error_response
 from engines.serializers import ModuleSerializer
 from configs.permissions import EnginePermission
 
@@ -15,29 +16,25 @@ from configs.permissions import EnginePermission
         description="Retrieve a specific module by ID.",
     ),
 )
-class GetModuleViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
+class GetModuleViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = Module.objects.all()
     serializer_class = ModuleSerializer
     permission_classes = [EnginePermission]
 
     def retrieve(self, request, *args, **kwargs):
-        module = get_object_or_404(Module, pk=kwargs["pk"])
+        module = self.queryset.filter(pk=kwargs["pk"]).first()
+        if not module:
+            return error_response(
+                message="Module not found",
+                code=status.HTTP_404_NOT_FOUND
+            )
+
         serializer = self.get_serializer(module)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @extend_schema(
-        operation_id="get_installed_modules",
-        tags=["Module Services"],
-        description="Retrieve all installed modules.",
-    )
-    @action(detail=False, methods=["get"], url_path="active")
-    def get_installed_modules(self, request):
-        modules = Module.objects.filter(installed=True)
-        if not modules.exists():
-            return Response({"message": "No installed modules available."}, status=status.HTTP_204_NO_CONTENT)
-
-        serializer = self.get_serializer(modules, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return success_response(
+            data=serializer.data,
+            message="Module retrieved successfully",
+            code=status.HTTP_200_OK
+        )
 
     @extend_schema(
         operation_id="get_all_modules",
@@ -46,12 +43,41 @@ class GetModuleViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin):
     )
     @action(detail=False, methods=["get"], url_path="all")
     def get_all_modules(self, request):
-        modules = self.queryset
+        modules = self.get_queryset()
         if not modules.exists():
-            return Response({"message": "No modules available."}, status=status.HTTP_204_NO_CONTENT)
+            return error_response(
+                message="No modules available",
+                code=status.HTTP_204_NO_CONTENT
+            )
 
         serializer = self.get_serializer(modules, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return success_response(
+            data=serializer.data,
+            message="Modules retrieved successfully",
+            code=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        operation_id="get_installed_modules",
+        tags=["Module Services"],
+        description="Retrieve all installed modules.",
+    )
+    @action(detail=False, methods=["get"], url_path="active")
+    def get_installed_modules(self, request):
+        modules = self.get_queryset().filter(installed=True)
+        if not modules.exists():
+            return error_response(
+                message="No installed modules available",
+                code=status.HTTP_204_NO_CONTENT
+            )
+
+        serializer = self.get_serializer(modules, many=True)
+        return success_response(
+            data=serializer.data,
+            message="Installed modules retrieved successfully",
+            code=status.HTTP_200_OK
+        )
+
 
 # 🔹 INSTALL MODULE
 @extend_schema_view(
@@ -69,7 +95,11 @@ class InstallModuleViewSet(viewsets.ViewSet):
         module = get_object_or_404(Module, pk=pk)
         module.installed = True
         module.save()
-        return Response({"message": f"Module {module.name} installed successfully."}, status=status.HTTP_200_OK)
+        return success_response(
+            data={"module": module.name},
+            message=f"Module {module.name} installed successfully.",
+            code=status.HTTP_200_OK
+        )
 
 
 # 🔹 UNINSTALL MODULE
@@ -88,7 +118,11 @@ class UninstallModuleViewSet(viewsets.ViewSet):
         module = get_object_or_404(Module, pk=pk)
         module.installed = False
         module.save()
-        return Response({"message": f"Module {module.name} uninstalled successfully."}, status=status.HTTP_200_OK)
+        return success_response(
+            data={"module": module.name},
+            message=f"Module {module.name} uninstalled successfully.",
+            code=status.HTTP_200_OK
+        )
 
 
 # 🔹 UPGRADE MODULE
@@ -114,4 +148,8 @@ class UpgradeModuleViewSet(viewsets.ViewSet):
 
         module.version = str(new_version)
         module.save()
-        return Response({"message": f"Module {module.name} upgraded to version {module.version}."}, status=status.HTTP_200_OK)
+        return success_response(
+            data={"module": module.name, "version": module.version},
+            message=f"Module {module.name} upgraded to version {module.version}.",
+            code=status.HTTP_200_OK
+        )

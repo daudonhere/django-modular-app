@@ -2,6 +2,7 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404, render
 from rest_framework import viewsets, mixins, status
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from products.models import Product

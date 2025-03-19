@@ -2,7 +2,7 @@ import uuid
 from django.contrib.auth.hashers import check_password
 from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets, mixins, status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -223,7 +223,7 @@ class GetRoleViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 class GetUserRoleViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = UserRole.objects.all()
     serializer_class = UserRoleSerializer
-    permission_classes = [UserPermission]
+    permission_classes = [IsAuthenticated, UserPermission]
 
     def retrieve(self, request, *args, **kwargs):
         user_role = self.queryset.filter(pk=kwargs["pk"]).first()
@@ -331,12 +331,10 @@ class CreateUserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
-                # Validasi & Simpan User
                 serializer = self.get_serializer(data=data)
                 serializer.is_valid(raise_exception=True)
                 user = serializer.save()
                 
-                # Assign Role ke User
                 UserRole.objects.bulk_create(
                     [UserRole(user=user, role=role) for role in valid_roles]
                 )
@@ -395,7 +393,7 @@ class CreateUserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 class GetUserViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [UserPermission]
+    permission_classes = [IsAuthenticated, UserPermission]
 
     def retrieve(self, request, *args, **kwargs):
         try:
@@ -454,7 +452,7 @@ class GetUserViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 class UpdateUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [UserPermission]
+    permission_classes = [IsAuthenticated, UserPermission]
     http_method_names = ["put"]
 
     @extend_schema(
@@ -547,7 +545,7 @@ class UpdateUserViewSet(viewsets.ModelViewSet):
 class DeleteUserViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [UserPermission]
+    permission_classes = [IsAuthenticated, UserPermission]
 
     def destroy(self, request, *args, **kwargs):
         user_id = kwargs.get("pk")

@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from products.models import Product
 from products.serializers import ProductSerializer
 from configs.permissions import ModulePermission
+from configs.utils import success_response, error_response
 from datetime import timedelta
 
 # PRODUCT SERVICE START
@@ -38,11 +39,11 @@ class GetProductViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            return error_response("Authentication required", code=status.HTTP_401_UNAUTHORIZED)
 
         product = get_object_or_404(self.get_queryset(), pk=kwargs["pk"])
         serializer = self.get_serializer(product)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return success_response(serializer.data, "Product retrieved successfully.")
 
     @extend_schema(
         operation_id="get_all_products",
@@ -53,7 +54,7 @@ class GetProductViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     def all(self, request):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return success_response(serializer.data, "All products retrieved successfully.")
 
 # CREATE PRODUCT
 @extend_schema_view(
@@ -71,8 +72,9 @@ class CreateProductViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return success_response(serializer.data, "Product created successfully.", code=status.HTTP_201_CREATED)
+        return error_response(serializer.errors, code=status.HTTP_400_BAD_REQUEST)
+
 
 # UPDATE PRODUCT
 @extend_schema_view(
@@ -88,7 +90,16 @@ class UpdateProductViewSet(viewsets.ModelViewSet):
     permission_classes = [ModulePermission]
     http_method_names = ["put"]
 
-# DELETE PRODUCTS ( Soft Delete )
+    def update(self, request, *args, **kwargs):
+        product = self.get_object()
+        serializer = self.get_serializer(product, data=request.data, partial=False)
+
+        if serializer.is_valid():
+            serializer.save()
+            return success_response(serializer.data, "Product updated successfully.")
+        return error_response(serializer.errors, code=status.HTTP_400_BAD_REQUEST)
+
+# DELETE PRODUCTS (Soft Delete)
 @extend_schema_view(
     destroy=extend_schema(
         operation_id="soft_delete_product_by_id",
@@ -96,7 +107,6 @@ class UpdateProductViewSet(viewsets.ModelViewSet):
         description="Move a specific product to recycle bin.",
     ),
 )
-
 class DeleteProductViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -107,7 +117,7 @@ class DeleteProductViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
         product.is_deleted = True
         product.deleted_at = timezone.now()
         product.save()
-        return Response({"message": "Product moved to recycle bin."}, status=status.HTTP_204_NO_CONTENT)
+        return success_response(None, "Product moved to recycle bin.")
 
     @extend_schema(
         operation_id="soft_delete_all_products",
@@ -119,18 +129,20 @@ class DeleteProductViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
         updated_count = Product.objects.filter(is_deleted=False).update(
             is_deleted=True, deleted_at=timezone.now()
         )
-        return Response({"message": f"{updated_count} product(s) moved to recycle bin."}, status=status.HTTP_204_NO_CONTENT)
+        if updated_count == 0:
+            return error_response("No products found to move to recycle bin.", code=status.HTTP_404_NOT_FOUND)
 
-    
-# DELETE PRODUCTS ( Permanent Delete )
+        return success_response(None, f"{updated_count} product(s) moved to recycle bin.")
+
+
+# DELETE PRODUCTS (Permanent Delete)
 @extend_schema_view(
     destroy=extend_schema(
         operation_id="permanent_delete_product_by_id",
         tags=["Product Services"],
-        description="Delete all product from recycle.",
+        description="Delete a specific product permanently.",
     ),
 )
-
 class PermanentDeleteProductViewSet(viewsets.GenericViewSet, mixins.DestroyModelMixin):
     permission_classes = [ModulePermission]
     queryset = Product.objects.filter(is_deleted=True)
@@ -138,7 +150,7 @@ class PermanentDeleteProductViewSet(viewsets.GenericViewSet, mixins.DestroyModel
     def destroy(self, request, pk=None):
         product = get_object_or_404(self.queryset, pk=pk)
         product.delete()
-        return Response({"message": "Product permanently deleted."}, status=status.HTTP_204_NO_CONTENT)
+        return success_response(None, "Product permanently deleted.")
 
     @extend_schema(
         operation_id="permanent_delete_all",
@@ -148,7 +160,11 @@ class PermanentDeleteProductViewSet(viewsets.GenericViewSet, mixins.DestroyModel
     @action(detail=False, methods=["delete"])
     def all(self, request):
         deleted_count, _ = self.queryset.delete()
-        return Response({"message": f"{deleted_count} product(s) permanently deleted."}, status=status.HTTP_204_NO_CONTENT)
+
+        if deleted_count == 0:
+            return error_response("No products found in recycle bin to delete.", code=status.HTTP_404_NOT_FOUND)
+
+        return success_response(None, f"{deleted_count} product(s) permanently deleted.")
     
 # RESTORE PRODUCTS
 @extend_schema_view(
@@ -167,7 +183,7 @@ class RestoreProductViewSet(viewsets.GenericViewSet, mixins.DestroyModelMixin):
         product.is_deleted = False
         product.deleted_at = None
         product.save()
-        return Response({"message": "Product restored successfully."}, status=status.HTTP_200_OK)
+        return success_response(None, "Product restored successfully.")
 
     @extend_schema(
         operation_id="restore_all_products",
@@ -177,10 +193,12 @@ class RestoreProductViewSet(viewsets.GenericViewSet, mixins.DestroyModelMixin):
     @action(detail=False, methods=["post"])
     def all(self, request):
         updated_count = self.queryset.update(is_deleted=False, deleted_at=None)
-        return Response(
-            {"message": f"{updated_count} product(s) restored successfully."},
-            status=status.HTTP_200_OK
-        )
+
+        if updated_count == 0:
+            return error_response("No products found in recycle bin to restore.", code=status.HTTP_404_NOT_FOUND)
+
+        return success_response(None, f"{updated_count} product(s) restored successfully.")
+
 
 # CLEANUP SCHEDULER: Auto-delete recycle after 24 hours
 def cleanup_recycle_bin():

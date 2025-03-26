@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-)g=oqshx)4o6)xn2q_0$#+1&ru=w2+_3841oz!_nrm$bpkq)d8
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -93,8 +93,8 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:8000",
+    "https://nextjs-modular-app.vercel.app",
+    "https://web-production-575d7.up.railway.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

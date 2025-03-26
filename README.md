@@ -5,11 +5,11 @@ Django Modular App Projects.
 Add .env to Backend project
 
 ```bash
-DB_USER=postgres.qksazjlxghfrlljqwlex
-DB_PASSWORD=NRxjAQf7XzGhamVf
-DB_HOST=aws-0-us-west-1.pooler.supabase.com
-DB_PORT=5432
-DB_NAME=postgres
+DB_USER=
+DB_PASSWORD=
+DB_HOST=
+DB_PORT=
+DB_NAME=
 ```
 
 Run your Backend project.
